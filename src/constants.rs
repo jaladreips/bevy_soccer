@@ -1,0 +1,1 @@
+pub const FIELD_SIZE : bevy::prelude::Vec2 = bevy::prelude::Vec2::new(120.0, 80.0);

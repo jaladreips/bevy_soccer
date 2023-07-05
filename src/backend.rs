@@ -1,4 +1,8 @@
+use std::time::Duration;
+
 use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
+
+use crate::constants;
 
 impl SoccerBackendPlugin {}
 impl Plugin for SoccerBackendPlugin {
@@ -15,11 +19,37 @@ impl Plugin for SoccerBackendPlugin {
         // app.add_system(apply_system_buffers.in_set(SoccerBackendStartupSet::CommandFlush));
         // app.add_startup_system(create_players.in_set(SoccerBackendStartupSet::Parallel));
         app.add_startup_system(create_players.in_base_set(StartupSet::Startup));
+        app.add_system(resolve_dynamics.in_schedule(CoreSchedule::FixedUpdate));
     }
 }
 
-#[derive(Component, Debug)]
-pub struct Dynamics;
+#[derive(Component, Debug, Copy, Clone, PartialEq)]
+pub struct Dynamics {
+    velocity: Vec2,
+    mass: f32,
+    impulse: Vec2,
+    drag: f32,
+    friction: f32,
+}
+
+impl Dynamics {
+    pub fn resolve_drag(self: &mut Self) {
+        self.impulse -= self.drag * self.velocity.normalize_or_zero() * self.velocity.length() * self.velocity.length();
+    }
+
+    pub fn resolve_friction(self: &mut Self) {
+        self.impulse -= self.friction * self.velocity.normalize_or_zero() * self.mass;
+    }
+
+    pub fn apply_impulse(self: &mut Self) {
+        self.velocity += self.impulse / self.mass / constants::TICKRATE as f32;
+        self.impulse = Vec2::new(0.0, 0.0);
+    }
+
+    pub fn update_transform(self: &Self, transform: &mut Transform) {
+        transform.translation += self.velocity.extend(0.0) / constants::TICKRATE as f32;
+    }
+}
 
 #[derive(Component)]
 pub struct Player;
@@ -27,15 +57,28 @@ pub struct Player;
 #[derive(Component)]
 struct Ball;
 
-pub fn create_players(mut commands: Commands) {
+fn create_players(mut commands: Commands) {
     commands.spawn((
         Player,
-        Dynamics,
+        Dynamics {
+            velocity: Vec2::new(-100.0, 0.0),
+            mass: 80.0,
+            impulse: Vec2::new(0.0, 0.0),
+            drag: 10.0,
+            friction: 10.0,
+        },
         TransformBundle::from_transform(Transform::from_xyz(40.0, 0.0, 1.0)),
     ));
 }
 
-const TICKRATE: i16 = 1000; // ticks per second
+fn resolve_dynamics(mut objects: Query<(&mut Dynamics, &mut Transform)>) {
+    for (mut dynamics, mut transform) in &mut objects {
+        dynamics.resolve_friction();
+        dynamics.resolve_drag();
+        dynamics.apply_impulse();
+        dynamics.update_transform(&mut transform);
+    }
+}
 
 #[derive(Default)]
 pub struct SoccerBackendPlugin {}
@@ -45,5 +88,3 @@ pub enum SoccerBackendStartupSet {
     Parallel,
     CommandFlush,
 }
-
-

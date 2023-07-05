@@ -33,21 +33,28 @@ pub struct Dynamics {
 }
 
 impl Dynamics {
-    pub fn resolve_drag(self: &mut Self) {
+    fn resolve_drag(self: &mut Self) {
         self.impulse -= self.drag * self.velocity.normalize_or_zero() * self.velocity.length() * self.velocity.length();
     }
 
-    pub fn resolve_friction(self: &mut Self) {
+    fn resolve_friction(self: &mut Self) {
         self.impulse -= self.friction * self.velocity.normalize_or_zero() * self.mass;
     }
 
-    pub fn apply_impulse(self: &mut Self) {
+    pub fn resolve(self: &mut Self) {
+        self.resolve_friction();
+        self.resolve_drag();
+
         self.velocity += self.impulse / self.mass / constants::TICKRATE as f32;
         self.impulse = Vec2::new(0.0, 0.0);
     }
 
     pub fn update_transform(self: &Self, transform: &mut Transform) {
         transform.translation += self.velocity.extend(0.0) / constants::TICKRATE as f32;
+    }
+
+    pub fn apply_impulse(self: &mut Self, impulse: Vec2) {
+        self.impulse += impulse;
     }
 }
 
@@ -73,9 +80,7 @@ fn create_players(mut commands: Commands) {
 
 fn resolve_dynamics(mut objects: Query<(&mut Dynamics, &mut Transform)>) {
     for (mut dynamics, mut transform) in &mut objects {
-        dynamics.resolve_friction();
-        dynamics.resolve_drag();
-        dynamics.apply_impulse();
+        dynamics.resolve();
         dynamics.update_transform(&mut transform);
     }
 }

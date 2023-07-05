@@ -6,6 +6,7 @@ use bevy::{prelude::App, window::WindowPlugin};
 mod backend;
 mod frontend;
 mod constants;
+mod control;
 
 fn main() {
     let mut app = App::new();
@@ -22,5 +23,6 @@ fn main() {
 
     app.add_plugin(backend::SoccerBackendPlugin::default());
     app.add_plugin(frontend::SoccerFrontendPlugin::default());
+    app.add_plugin(control::SoccerControlPlugin::default());
     app.run();
 }

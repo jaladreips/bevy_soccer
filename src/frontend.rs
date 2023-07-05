@@ -28,8 +28,8 @@ impl Plugin for SoccerFrontendPlugin {
 
     fn build(&self, app: &mut App) {
         app.add_startup_system(camera_setup);
-        app.add_startup_system(prepare_field);
-        app.add_startup_system(prepare_player.in_base_set(StartupSet::PostStartup));
+        app.add_startup_system(draw_field);
+        app.add_startup_system(draw_player.in_base_set(StartupSet::PostStartup));
     }
 }
 
@@ -37,7 +37,7 @@ impl Plugin for SoccerFrontendPlugin {
 struct MainCamera;
 
 fn camera_setup(mut commands: Commands) {
-    const FIELD_SCALE : f32 = 1.2;
+    const FIELD_SCALE: f32 = 1.2;
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
@@ -53,7 +53,7 @@ fn camera_setup(mut commands: Commands) {
     ));
 }
 
-fn prepare_player(
+fn draw_player(
     mut commands: Commands,
     players: Query<Entity, With<backend::Player>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -67,6 +67,7 @@ fn prepare_player(
             .spawn(MaterialMesh2dBundle {
                 mesh: mesh.into(),
                 material: material,
+                transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::PLAYERS.z()),
                 ..Default::default()
             })
             .set_parent(player);
@@ -78,7 +79,7 @@ fn prepare_player(
     }
 }
 
-fn prepare_field(
+fn draw_field(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -91,7 +92,7 @@ fn prepare_field(
     commands.spawn(MaterialMesh2dBundle {
         mesh: mesh.into(),
         material: material,
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::FIELD.z()),
         ..Default::default()
     });
 }
@@ -100,4 +101,20 @@ fn prepare_field(
 pub enum SoccerFrontendStartupSet {
     Parallel,
     CommandFlush,
+}
+
+#[repr(C)]
+enum ZLayerOrder {
+    // from background to foreground
+    FIELD,
+    PLAYERS,
+    NUM_LAYERS,
+}
+
+impl ZLayerOrder {
+    fn z(self: Self) -> f32 {
+        let current_layer = self as u32 as f32;
+        let num_layers = Self::NUM_LAYERS as u32 as f32;
+        current_layer / num_layers
+    }
 }

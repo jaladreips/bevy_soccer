@@ -1,5 +1,3 @@
-use std::iter::Map;
-
 use crate::{backend, constants};
 use bevy::prelude::*;
 
@@ -32,7 +30,7 @@ fn keyboard_to_dynamics(
     for (_, mut dynamics) in &mut query {
         let mut direction = Vec2::new(0.0, 0.0);
 
-        let mut key_direction_map = std::collections::HashMap::from([
+        let key_direction_map = std::collections::HashMap::from([
             ([KeyCode::Right, KeyCode::D], Vec2::X),
             ([KeyCode::Up, KeyCode::W], Vec2::Y),
             ([KeyCode::Left, KeyCode::A], Vec2::NEG_X),

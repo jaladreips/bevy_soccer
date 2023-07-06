@@ -34,7 +34,10 @@ pub struct Dynamics {
 
 impl Dynamics {
     fn resolve_drag(self: &mut Self) {
-        self.impulse -= self.drag * self.velocity.normalize_or_zero() * self.velocity.length() * self.velocity.length();
+        self.impulse -= self.drag
+            * self.velocity.normalize_or_zero()
+            * self.velocity.length()
+            * self.velocity.length();
     }
 
     fn resolve_friction(self: &mut Self) {

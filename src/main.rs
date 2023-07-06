@@ -4,9 +4,9 @@ use bevy::DefaultPlugins;
 use bevy::{prelude::App, window::WindowPlugin};
 
 mod backend;
-mod frontend;
 mod constants;
 mod control;
+mod frontend;
 
 fn main() {
     let mut app = App::new();
@@ -18,7 +18,7 @@ fn main() {
         }),
         ..Default::default()
     }));
-    
+
     app.add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new());
 
     app.add_plugin(backend::SoccerBackendPlugin::default());

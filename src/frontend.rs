@@ -29,7 +29,7 @@ impl Plugin for SoccerFrontendPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(camera_setup);
         app.add_startup_system(draw_field);
-        app.add_startup_system(draw_player.in_base_set(StartupSet::PostStartup));
+        app.add_startup_systems((draw_player, draw_ball).in_base_set(StartupSet::PostStartup));
     }
 }
 
@@ -60,20 +60,46 @@ fn draw_player(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for player in &players {
-        let mesh = meshes.add(Mesh::from(Circle::new(2.0)));
+        let mesh = meshes.add(Mesh::from(Circle::new(constants::PLAYER_RADIUS)));
         let material = materials.add(ColorMaterial::from(Color::PURPLE));
 
         commands
             .spawn(MaterialMesh2dBundle {
                 mesh: mesh.into(),
                 material: material,
-                transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::PLAYERS.z()),
+                transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::Player.z()),
                 ..Default::default()
             })
             .set_parent(player);
 
         commands
             .get_entity(player)
+            .unwrap()
+            .insert(VisibilityBundle::default());
+    }
+}
+
+fn draw_ball(
+    mut commands: Commands,
+    balls: Query<Entity, With<backend::Ball>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for ball in &balls {
+        let mesh = meshes.add(Mesh::from(Circle::new(constants::BALL_RADIUS)));
+        let material = materials.add(ColorMaterial::from(Color::WHITE));
+
+        commands
+            .spawn(MaterialMesh2dBundle {
+                mesh: mesh.into(),
+                material: material,
+                transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::Ball.z()),
+                ..Default::default()
+            })
+            .set_parent(ball);
+
+        commands
+            .get_entity(ball)
             .unwrap()
             .insert(VisibilityBundle::default());
     }
@@ -92,7 +118,7 @@ fn draw_field(
     commands.spawn(MaterialMesh2dBundle {
         mesh: mesh.into(),
         material: material,
-        transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::FIELD.z()),
+        transform: Transform::from_xyz(0.0, 0.0, ZLayerOrder::Field.z()),
         ..Default::default()
     });
 }
@@ -106,15 +132,16 @@ pub enum SoccerFrontendStartupSet {
 #[repr(C)]
 enum ZLayerOrder {
     // from background to foreground
-    FIELD,
-    PLAYERS,
-    NUM_LAYERS,
+    Field,
+    Player,
+    Ball,
+    NumLayers,
 }
 
 impl ZLayerOrder {
     fn z(self: Self) -> f32 {
         let current_layer = self as u32 as f32;
-        let num_layers = Self::NUM_LAYERS as u32 as f32;
+        let num_layers = Self::NumLayers as u32 as f32;
         current_layer / num_layers
     }
 }

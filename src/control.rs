@@ -44,5 +44,9 @@ fn keyboard_to_dynamics(
         }
 
         dynamics.apply_impulse(direction.normalize_or_zero() * constants::IMPULSE_PER_KEYPRESS);
+
+        if keys.pressed(KeyCode::Space) {
+            dynamics.brake();
+        }
     }
 }
